@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+/>
+  <title>Menú El sason de la abuelita</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .menu-wrapper {
+      position: relative;
+      width: 100%;
+      max-height: 94vh;
+      overflow: hidden;
+      border-radius: 10px;
+    }
+
+    .menu-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: transform 0.5s ease;
+      border-radius: 10px;
+    }
+
+    .menu-wrapper:hover .menu-img {
+  transform: scale(1.1);
+  transform-origin: 30% center; /* ← Aquí se controla la dirección del zoom */
+}
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    .map-container {
+      margin-top: 30px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    iframe {
+      width: 100%;
+      height: 300px;
+      border: none;
+      border-radius: 10px;
+    }
+
+    .whatsapp-button {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #25d366;
+      color: white;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-decoration: none;
+      font-size: 30px;
+      box-shadow: 0 0 10px #25d366;
+      transition: transform 0.3s;
+      z-index: 10;
+    }
+
+    .whatsapp-button:hover {
+      transform: scale(1.2);
+    }
+
+    
+  </style>
+
+  
+</head>
+<body>
+
+  <div class="container">
+    <h1>El sazón de la Abuelita</h1>
+    <div class="menu-wrapper" id="wrapper">
+      <img src="imagenes/menu.jpeg" id="img" class="menu-img" alt="Menú" />
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="map-container">
+      <iframe
+        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3761.2005629957685!2d-98.54267352603716!3d19.49000033884771!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85d1d3bcc418626b%3A0x91a0aa882b9bffad!2sC.%20Moctezuma%2032%2C%20Domingo%20Arenas%2C%2090280%20Cdad.%20de%20Nanacamilpa%2C%20Tlax.!5e0!3m2!1ses-419!2smx!4v1750912083073!5m2!1ses-419!2smx"
+        allowfullscreen=""
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade">
+      </iframe>
+    </div>
+  </div>
+
+  <!-- Botón de WhatsApp -->
+ <a
+  class="whatsapp-button"
+  href="https://wa.me/+522482501061"
+  target="_blank"
+  aria-label="Contáctanos por WhatsApp"
+>
+  <i class="fab fa-whatsapp"></i>
+</a>
+
+  <script>
+    const wrapper = document.getElementById('wrapper');
+    const img = document.getElementById('img');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = img.width;
+      canvas.height = img.height;
+    }
+
+    img.onload = resizeCanvas;
+    window.addEventListener('resize', resizeCanvas);
+
+    function Particle(x, y, color) {
+      this.x = x;
+      this.y = y;
+      this.vx = (Math.random() - 0.5) * 4;
+      this.vy = (Math.random() - 0.5) * 4;
+      this.alpha = 1;
+      this.color = color;
+    }
+
+    Particle.prototype.update = function() {
+      this.x += this.vx;
+      this.y += this.vy;
+      this.alpha -= 0.02;
+    };
+
+    Particle.prototype.draw = function() {
+      ctx.globalAlpha = this.alpha;
+      ctx.fillStyle = this.color;
+      ctx.fillRect(this.x, this.y, 2, 2);
+      ctx.globalAlpha = 1;
+    };
+
+    function explode() {
+      ctx.drawImage(img, 0, 0, img.width, img.height);
+      const imgData = ctx.getImageData(0, 0, img.width, img.height);
+      const { data, width, height } = imgData;
+      const grid = 6;
+
+      particles = [];
+      for (let y = 0; y < height; y += grid) {
+        for (let x = 0; x < width; x += grid) {
+          const idx = (y * width + x) * 4;
+          const r = data[idx], g = data[idx + 1], b = data[idx + 2], a = data[idx + 3];
+          if (a > 128) {
+            particles.push(new Particle(x, y, `rgba(${r},${g},${b},${a/255})`));
+          }
+        }
+      }
+      ctx.clearRect(0, 0, width, height);
+    }
+
+    let animId;
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p, i) => {
+        p.update();
+        p.draw();
+        if (p.alpha <= 0) particles.splice(i, 1);
+      });
+      if (particles.length > 0) animId = requestAnimationFrame(animate);
+    }
+
+    wrapper.addEventListener('mouseenter', () => {
+      explode();
+      cancelAnimationFrame(animId);
+      animate();
+    });
+
+    wrapper.addEventListener('mouseleave', () => {
+      cancelAnimationFrame(animId);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+  </script>
+  <div id="qrcode"></div>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+  new QRCode(document.getElementById("qrcode"), "https://tuusuario.github.io/mi-menu/");
+</script>
+</body>
+</html>
